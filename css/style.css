@@ -1,0 +1,66 @@
+
+
+body {
+	font-family: Monospace;
+	background-color: #ddd;
+	margin: 0px;
+	overflow: hidden;
+}
+
+#blocker {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	color: black;
+}
+
+#instructions {
+	width: 100%;
+	height: 100%;
+	color: black;
+
+	-webkit-box-orient: horizontal;
+	-moz-box-orient: horizontal;
+	box-orient: horizontal;
+
+	-webkit-box-pack: center;
+	-moz-box-pack: center;
+	box-pack: center;
+
+	-webkit-box-align: center;
+	-moz-box-align: center;
+	box-align: center;
+
+	text-align: center;
+	cursor: pointer;
+}
+
+#instructions:before {
+  content: ' ';
+  display: inline-block;
+  vertical-align: middle;
+  height: 100%;
+}
+
+#info {
+	color: #ffffff;
+	position: absolute;
+	top: 10px;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:block;
+
+}
+
+#gui {
+	margin: 1.0em 0em 0em 0.4em;
+	z-index: 10;
+	position: absolute;
+	padding: 0px;
+	display: block;
+}
+
+a {
+	color: #00ffff;
+}

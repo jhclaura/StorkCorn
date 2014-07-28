@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>clouds</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"ma>
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+	</head>
+
+	<body>
+		<div id="gui">
+		</div>
+
+		<div id="info">
+			clouds
+		</div>
+
+		<div id="blocker" style="display: -webkit-box;">
+			<div id="instructions" >
+				<img width="60" height="60" src="images/click.gif">
+			</div>
+		</div>
+
+		<script>
+			var host = location.origin.replace(/^http/, 'ws');
+			var ws = new WebSocket(host);
+			var myID;
+
+			ws.onopen = function(){
+				console.log('our browser is connected');
+			}
+
+			ws.onmessage = function(msg){
+				var data = JSON.parse( msg.data );
+				// console.log(data);
+
+				myID = data.myID;
+				console.log('my id: ' + myID);
+
+				//ADD_STORK
+				var hex = data.hex;
+				var locX = data.locX;
+				var locY = data.locY;
+				var locZ = data.locZ;
+				var rotY = data.rotY;
+
+				if(data.type == 'addStork')
+					createStork(locX, locY, locZ, rotY, hex);
+
+				//NEW_PLAYER
+				var playerStartX = data.playerStartX;
+				var playerStartY = data.playerStartY;
+				var playerStartZ = data.playerStartZ;
+				var playerStartRotY = data.playerStartRotY;
+				var newHex = data.newHex;
+				var qChanged = data.qChanged;
+
+
+				if(data.type == 'addNewPlayer'){
+					createPlayer(playerStartX, playerStartY, playerStartZ, playerStartRotY, newHex, qChanged);
+				}
+
+				//UPDATE_PLAYER
+				if(data.type == 'updatePlayer' && data.playerID > myID){
+					var playerLocX = data.playerLocX;
+					var playerLocZ = data.playerLocZ;
+					var playerRotY = data.playerRotY;
+					var qChanged = data.qChanged;
+
+					updatePlayerStork(data.playerID, playerLocX, playerLocZ, playerRotY, qChanged);
+				}
+
+
+				//REMOVE_PLAYER
+				if(data.type == 'removePlayer' && data.removeID > myID){
+					removePlayer(data.removeID-myID-1);					
+					console.log('removePlayer #' + data.removeID);
+				}
+			}
+
+			ws.onclose = function(){
+				//
+			}
+
+			//
+
+			//MOUSE_EVENT
+			window.onmousedown = function(event){
+
+				var hex = 0x00ffff;
+				var locX = -25 + Math.random()*50;
+				var locY = 0;
+				var locZ = -25 + Math.random()*50;
+				var rotY = -150 * (Math.PI/180) + Math.random() * 300 * (Math.PI/180);
+
+				var msg = {
+					'type':'addStork',
+					'hex': hex,
+					'locX': locX,
+					'locY': locY,
+					'locZ': locZ,
+					'rotY': rotY
+				};
+
+				// console.log(msg.type);
+
+
+				if(ws){
+					// ws.send( JSON.stringify(msg) );
+					sendMessage( JSON.stringify(msg) );
+				}
+
+				// createStork(hex);
+			}
+
+			//SYNCING_ISSUE
+			//http://stackoverflow.com/questions/23898477/tornado-websockets-invalidstateerror-still-in-connecting-state
+			//but has better solution... e.g. promises
+			function sendMessage(msg) {
+		        waitForSocketConnection(ws, function() {
+		            ws.send( msg );
+		        });
+		    };
+
+
+			function waitForSocketConnection(socket, callback){
+		        setTimeout(
+		            function(){
+		                if (socket.readyState === 1) {
+		                    if(callback !== undefined){
+		                        callback();
+		                    }
+		                    return;
+		                } else {
+		                    waitForSocketConnection(socket,callback);
+		                }
+		            }, 5);
+		    };
+
+		</script>
+	</body>
+
+    <script type="text/javascript" src="js/BufferLoader.js"></script>
+	<script type="text/javascript" src="js/three.min.js"></script>
+	<script type="text/javascript" src="js/ImprovedNoise.js"></script>
+	<script type="text/javascript" src="js/OculusRiftEffect.js"></script>
+	<script type="text/javascript" src="js/PathControls.js"></script>
+	<script type="text/javascript" src="js/PointerLockControlsC.js"></script>
+
+	<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" src="js/xgui.min.js"></script>
+
+	<script type="text/javascript" src="js/stats.min.js"></script>
+	<script type="text/javascript" src="js/Detector.js"></script>
+	<script type="text/javascript" src="js/KeyboardState.js"></script>
+	<script type="text/javascript" src="js/THREEx.DeviceOrientationState.js"></script>
+	<script type="text/javascript" src="js/THREEx.WindowResize.js"></script>
+	<script type="text/javascript" src="js/THREEx.FullScreen.js"></script>
+	<script type="text/javascript" src="js/wave.js"></script>
+	<script type="text/javascript" src="js/corn.js"></script>
+	<script type="text/javascript" src="scriptC.js"></script>
+
+</html>

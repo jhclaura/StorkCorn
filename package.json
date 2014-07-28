@@ -1,0 +1,17 @@
+{
+  "name": "cornStorkBaby",
+  "version": "0.0.0",
+  "description": "stork + corn + websockets",
+  "main": "scriptC.js",
+  "dependencies": {
+    "express": "~4.6.1",
+    "ws": "~0.4.31"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Laura Chen",
+  "license": "ISC"
+}
