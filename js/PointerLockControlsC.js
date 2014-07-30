@@ -147,7 +147,7 @@ THREE.PointerLockControls = function ( camera ) {
 		// console.log("movementX: " + movementX + ", movementY: " + movementY);
 		// console.log(yawObject.quaternion);
 		// console.log(yawObject.rotation);
-		console.log('rotY: ' + yawObject.rotation.y/Math.PI*180);
+		//console.log('rotY: ' + yawObject.rotation.y/Math.PI*180);
 
 		//TIMEOUT_detect mouse stop
 		clearTimeout(mouseTimeOut);
@@ -269,10 +269,18 @@ THREE.PointerLockControls = function ( camera ) {
 		var movementX = touchCurrentLoc.clone().sub(touchStartLoc).x;
 		var movementY = touchCurrentLoc.clone().sub(touchStartLoc).y;
 
-		yawObject.rotation.y -= movementX * 0.00009;
-		pitchObject.rotation.x -= movementY * 0.00009;
+		//adjust_rotY
+			mouseActive = true;
 
-		// pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
+			if( quaternionChanged )
+				yawObject.rotation.y += movementX * 0.00009;
+			else
+				yawObject.rotation.y -= movementX * 0.00009;
+		//
+
+		// yawObject.rotation.y -= movementX * 0.00009;
+		pitchObject.rotation.x -= movementY * 0.00009;
+		pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
 
 
 		// console.log("move: ");
