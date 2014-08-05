@@ -24,7 +24,8 @@
 		<script>
 			var host = location.origin.replace(/^http/, 'ws');
 			var ws = new WebSocket(host);
-			var myID;
+			var myID, createID = false;
+			var updatePreviousPlayer = false;
 
 			ws.onopen = function(){
 				console.log('our browser is connected');
@@ -34,7 +35,10 @@
 				var data = JSON.parse( msg.data );
 				// console.log(data);
 
-				myID = data.myID;
+				if(!createID){
+					myID = data.myID;
+					createID = true;
+				}
 				console.log('my id: ' + myID);
 
 				//ADD_STORK
@@ -60,8 +64,37 @@
 					createPlayer(playerStartX, playerStartY, playerStartZ, playerStartRotY, newHex, qChanged);
 				}
 
+					//info of previous players
+					if(data.length>0 && !updatePreviousPlayer){
+						// console.log(data);
+
+						// for(var i=0; i<data.length; i++){
+						// 	console.log(myID + ', ' + data[i].myID);
+						// }
+
+						for(var i=0; i<data.length; i++){
+							// console.log('!');
+							if(myID > data[i].myID){
+								// console.log('create!');
+
+								var oldPlayerStartX = data[i].playerStartX;
+								var oldPlayerStartY = data[i].playerStartY;
+								var oldPlayerStartZ = data[i].playerStartZ;
+								var oldPlayerStartRotY = data[i].playerStartRotY;
+								var oldNewHex = data[i].newHex;
+								var oldQChanged = data[i].qChanged;
+
+								createPlayer(oldPlayerStartX, oldPlayerStartY, oldPlayerStartZ, oldPlayerStartRotY, oldNewHex, oldQChanged);
+								// console.log('create!');
+							}							
+						}
+						updatePreviousPlayer = true;
+					}
+
 				//UPDATE_PLAYER
-				if(data.type == 'updatePlayer' && data.playerID > myID){
+				if(data.type == 'updatePlayer' && data.playerID != myID){
+					console.log('data.playerID: ' + data.playerID);
+
 					var playerLocX = data.playerLocX;
 					var playerLocZ = data.playerLocZ;
 					var playerRotY = data.playerRotY;
@@ -72,8 +105,8 @@
 
 
 				//REMOVE_PLAYER
-				if(data.type == 'removePlayer' && data.removeID > myID){
-					removePlayer(data.removeID-myID-1);					
+				if(data.type == 'removePlayer'){
+					removePlayer(data.removeID);					
 					console.log('removePlayer #' + data.removeID);
 				}
 			}

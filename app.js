@@ -80,6 +80,7 @@ wss.on('connection', function(ws){
 				};
 				allSockets.splice(i,1);
 				clientIds.splice(i,1);
+				redPlayer.splice(i,1);
 
 				socketHandlers(ws,msg);
 
@@ -96,17 +97,61 @@ wss.on('connection', function(ws){
 //////////////////////////////////////
 //////////////////////////////////////
 
+var redPlayer = [];
+
 var socketHandlers = function(socket,msg){
+
+	//GENERAL_SENDING_DATA
 	for(var i=0; i<allSockets.length; i++){
 		try{
 			msg.myID = clientIds[i];
-
 			allSockets[i].send(JSON.stringify(msg));
+
 		}
 		catch(error){
 			console.log('that socket was closed');
 		}
 	}
+
+	//RESTORE_PLAYER_HISTORY
+	for(var i=0; i<allSockets.length; i++){
+		try{
+			if(msg.type=='addNewPlayer'){
+
+				if(msg.camID==0){
+					redPlayer.push(msg);
+					msg.camID++;
+				}
+
+				allSockets[i].send(JSON.stringify(redPlayer));				
+				console.log(redPlayer.length);
+			}
+		}
+		catch(error){
+			console.log('that socket was closed');
+		}
+	}
+
+	//RESTORE_AddStork
+	// for(var i=0; i<allSockets.length; i++){
+
+	// 	try{
+	// 		if(msg.type=='addNewPlayer'){
+
+	// 			if(msg.camID==0){
+	// 				redPlayer.push(msg);
+	// 				msg.camID++;
+	// 			}
+
+	// 			allSockets[i].send(JSON.stringify(redPlayer));				
+	// 			console.log(redPlayer.length);
+	// 		}
+	// 	}
+	// 	catch(error){
+	// 		console.log('that socket was closed');
+	// 	}
+
+	// }
 };
 
 // var socketHandlers = {

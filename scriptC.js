@@ -833,19 +833,28 @@ function createPlayer(locX, locY, locZ, rotY, colorMsg, qChange){
 
 
 function updatePlayerStork(playerID, playerLocX, playerLocZ, playerRotY, qChange){
-	// console.log(playerID - myID-1);
 
-	storkPlayers[playerID - myID-1].position.x = playerLocX;
-	storkPlayers[playerID - myID-1].position.z = playerLocZ;
+	if(playerID<myID)
+		var index = playerID-1;
+	else
+		var index = playerID-2;
+
+	storkPlayers[index].position.x = playerLocX;
+	storkPlayers[index].position.z = playerLocZ;
 
 	if(qChange)
-		storkPlayers[playerID - myID-1].rotation.y = -playerRotY;
+		storkPlayers[index].rotation.y = -playerRotY;
 	else
-		storkPlayers[playerID - myID-1].rotation.y = playerRotY + 180*Math.PI/180;
+		storkPlayers[index].rotation.y = playerRotY + 180*Math.PI/180;
 }
 
 
-function removePlayer(index){
+function removePlayer(playerID){
+	if(playerID<myID)
+		var index = playerID-1;
+	else
+		var index = playerID-2;
+	
 	scene.remove(storkPlayers[index]);
 }
 
