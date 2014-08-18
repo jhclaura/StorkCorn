@@ -113,7 +113,7 @@ THREE.PointerLockControls = function ( camera ) {
 		'qChanged': quaternionChanged
 	};
 
-	console.log('rotY: ' + playerStartRotY/Math.PI*180);
+	//console.log('rotY: ' + playerStartRotY/Math.PI*180);
 
 	// if(ws){
 		if(oldPlayerNum != newPlayerNum){
@@ -478,8 +478,12 @@ THREE.PointerLockControls = function ( camera ) {
 
 		var direction = new THREE.Vector3( 0, 0, -1 );
 		var rotation = new THREE.Euler( 0, 0, 0, "YXZ" );
+		//var v = new THREE.Vector3( 0, 0, -1 );
 
 		return function( v ) {
+
+			var v = new THREE.Vector3( 0, 0, -1 );
+
 
 			rotation.set( pitchObject.rotation.x, yawObject.rotation.y, 0 );
 

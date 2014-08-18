@@ -15,12 +15,18 @@
 			clouds
 		</div>
 
+		<div id="target" style="display: -webkit-box;">
+			<img width="60" height="60" src="images/target.png">
+		</div>
+
+
 		<div id="blocker" style="display: -webkit-box;">
 			<div id="instructions" >
 				<img width="60" height="60" src="images/click.gif">
 			</div>
 		</div>
 
+		
 		<script>
 			var host = location.origin.replace(/^http/, 'ws');
 			var ws = new WebSocket(host);
@@ -39,7 +45,7 @@
 					myID = data.myID;
 					createID = true;
 				}
-				console.log('my id: ' + myID);
+				//console.log('my id: ' + myID);
 
 				//ADD_STORK
 				var hex = data.hex;

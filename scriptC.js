@@ -127,9 +127,10 @@ function funToCall(event){
 	var width = window.innerWidth, height = window.innerHeight;
 
 
-	var camera, scene, projector, renderer;
+	var camera, scene, projector, raycaster, renderer;
 	var realCamera;
 	var guiVisible = true;
+	var directLight, hemiLight;
 
 	var effect, controls;
 
@@ -138,7 +139,7 @@ function funToCall(event){
 
 	var perlin;
 
-	var clouds = [];
+	var clouds = [], cloudMat;
 	var ground;
 
 	var storkGeo, storkWingRGeo, storkWingLGeo;
@@ -148,6 +149,10 @@ function funToCall(event){
 	var storkTexture, storkMaterial;
 	var storkLoaded = false;
 	var s = false, sR = false, sL = false;
+
+	var storkWithLegs = [], storkWithLeg;
+
+	var storkFlys = [], storkFly;
 
 	var cornSticks = [], cornKernels = [];
 
@@ -178,6 +183,7 @@ function funToCall(event){
 	var runnings = [];
 
 	var wingWave;
+	var legWave, flyWaves = [];
 
 //GUI
 	var gui;
@@ -216,6 +222,9 @@ function funToCall(event){
 	var binCount, levelBins;
 
 	var isPlayingAudio = false;
+
+	var colorRed = 204;
+
 
 
 // window.addEventListener('load', initAudio, false);
@@ -257,6 +266,8 @@ function init() {
 	}, false); 
 
 	start = Date.now();
+	projector = new THREE.Projector();
+	raycaster = new THREE.Raycaster();
 
 	perlin = new ImprovedNoise();
 
@@ -278,6 +289,13 @@ function init() {
 		}
 
 		wingWave = new SinWave( timeWs[0], frequencyWing, amplitudeW/15, offsetW );
+		legWave = new CosWave( timeWs[0], frequencyWing/3*2, amplitudeW/15, offsetW );
+		flyWave = new CosWave( timeWs[0], frequencyWing/3*4, amplitudeW/15, offsetW );
+
+		for(var i=0; i<12; i++){
+			var flyW = new SinWave(timeWs[i%10], frequencyWing/2, amplitudeW/15, offsetW );
+			flyWaves.push(flyW);
+		}
 
 
 	//GUI
@@ -293,7 +311,7 @@ function init() {
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 
-	camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 0.1, 20000 );
+	camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 20000 );
 
 	/*
 	//PATH_CAM
@@ -325,17 +343,24 @@ function init() {
 
 	//
 
-	var light = new THREE.DirectionalLight(0xffffff,1);
-	light.position.set(0,1,2);
-	scene.add(light);
+	directLight = new THREE.DirectionalLight(0xffffff,1);
+	directLight.position.set(0,1,2);
+	directLight.castShadow = true;
+	scene.add(directLight);
 
-	light = new THREE.DirectionalLight(0xd6fcfe, 0.6);
-	light.position.set(0,1,-1);
-	scene.add(light);
+	var otherLight = new THREE.DirectionalLight(0xd6fcfe, 0.6);
+	otherLight.position.set(0,1,-1);
+	// scene.add(otherLight);
 
-	light = new THREE.DirectionalLight(0xd6fcfe, 1);
-	light.position.set(0,-1,-2);
-	scene.add(light);
+	otherLight = new THREE.DirectionalLight(0xd6fcfe, 1);
+	otherLight.position.set(0,-1,-2);
+	// scene.add(otherLight);
+
+	hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.5);
+	hemiLight.color.setHex(0xe8fdff);
+	hemiLight.groundColor.setHex(0xffbcb5);
+	hemiLight.position.set(0,300,0);
+	scene.add(hemiLight);
 
 	//
 	renderer = new THREE.WebGLRenderer( {antialias: true, alpha: true} );
@@ -359,13 +384,16 @@ function init() {
 	loadModelGround("models/cloud_ground.js", modelMaterial);
 
 	// rabbitTexture = THREE.ImageUtils.loadTexture('images/rabbit.png');
-	modelMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-	loadModelCloud("models/cloud_10.js", modelMaterial);
+	cloudMat = new THREE.MeshLambertMaterial( {color: 0xffffff, emissive: 0x55ffff} );
+	loadModelCloud("models/cloud_10.js", cloudMat);
 
 	storkTexture = THREE.ImageUtils.loadTexture('images/stork.png');
 	storkMaterial = new THREE.MeshLambertMaterial( {map: storkTexture} );
 	var modelMaterialB = new THREE.MeshLambertMaterial( {color: 0xfcbac1, side: THREE.DoubleSide} );
 	loadModelStork("models/storkA.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/sack.js", storkMaterial, modelMaterialB);
+	loadModelStorkL("models/stork_v2/storkBody.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/stork_v2/legLU.js", "models/stork_v2/legRU.js", "models/stork_v2/legLB.js", "models/stork_v2/legRB.js", "models/sack.js", storkMaterial, modelMaterialB);
+	loadModelStorkF("models/storkB.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/sack.js", storkMaterial, modelMaterialB);
+
 
 	modelMaterial = new THREE.MeshLambertMaterial( {color: 0xf7e120} );
 	modelMaterialB = new THREE.MeshLambertMaterial( {color: 0xfee9c9} );
@@ -541,6 +569,8 @@ function loadModelGround (model, meshMat) {
 
 		ground = new THREE.Mesh(geometry, meshMat);
 		ground.scale.set(3,3,3);
+		ground.receiveShadow = true;
+
 		scene.add(ground);
 			
 	}, "js");
@@ -552,45 +582,259 @@ function loadModelStork (model_A, model_B, model_C, model_D, meshMat, meshMatB) 
 	loader.load(model_A, function(geometryA){
 
 		storkGeo = geometryA.clone();
-		stork = new THREE.Mesh(geometryA, meshMat);
-		scene.add(stork);
-		s=true;
+		// stork = new THREE.Mesh(geometryA, meshMat);
+		// scene.add(stork);
+		// s=true;
 			
+	}, "js");
+
+	// loader.load(model_B, function(geometryB){
+
+	// 	storkWingRGeo = geometryB.clone();
+	// 	storkWingR = new THREE.Mesh(geometryB, meshMat);
+	// 	storkWingR.position.y = 4.2;
+	// 	storkWingR.position.x = -0.8;
+	// 	storkWingR.position.z = 1;
+
+	// 	scene.add(storkWingR);
+	// 	sR=true;
+			
+	// }, "js");
+
+	// loader.load(model_C, function(geometryC){
+
+	// 	storkWingLGeo = geometryC.clone();
+	// 	storkWingL = new THREE.Mesh(geometryC, meshMat);
+	// 	storkWingL.position.y = 4.2;
+	// 	storkWingL.position.x = 0.8;
+	// 	storkWingL.position.z = 1;
+
+	// 	scene.add(storkWingL);
+	// 	sL=true;
+			
+	// }, "js");
+
+	// loader.load(model_D, function(geometryD){
+
+	// 	var sack = new THREE.Mesh(geometryD, meshMatB);
+	// 	scene.add(sack);
+			
+	// }, "js");
+
+}
+
+function loadModelStorkL (model_A, model_B, model_C, model_D, model_E, model_F, model_G, model_H, meshMat, meshMatB) {
+
+	// for(var i=0; i<12; i++){
+		var colorStork = new THREE.Object3D();
+
+		var loader = new THREE.JSONLoader();
+		loader.load(model_A, function(geometryA){
+
+			//storkGeo = geometryA.clone();
+			storkBody = new THREE.Mesh(geometryA, meshMat);
+
+			storkBody.name = "storkBody";
+
+			colorStork.add(storkBody);
+			// scene.add(storkBody);
+			//s=true;
+				
+		}, "js");
+
+		loader.load(model_B, function(geometryB){
+
+			storkWingRGeo = geometryB.clone();
+			storkWingR = new THREE.Mesh(geometryB, meshMat);
+			storkWingR.position.y = 4.2;
+			storkWingR.position.x = -0.8;
+			storkWingR.position.z = 1;
+
+			storkWingR.name = "storkWingR";
+
+			colorStork.add(storkWingR);
+			// scene.add(storkWingR);
+			//sR=true;
+				
+		}, "js");
+
+		loader.load(model_C, function(geometryC){
+
+			storkWingLGeo = geometryC.clone();
+			storkWingL = new THREE.Mesh(geometryC, meshMat);
+			storkWingL.position.y = 4.2;
+			storkWingL.position.x = 0.8;
+			storkWingL.position.z = 1;
+
+			storkWingL.name = "storkWingL";
+
+			colorStork.add(storkWingL);
+			// scene.add(storkWingL);
+			//sL=true;
+				
+		}, "js");
+
+
+		//LEGS
+		loader.load(model_D, function(geometryD){
+
+			//var LegLUGeo = geometryD.clone();
+			var LegLU = new THREE.Mesh(geometryD, meshMat);
+			LegLU.position.y = 3.3;
+			LegLU.position.x = 0.5;
+
+			LegLU.name = "LegLU";
+			// LegLU.position.z = 1;
+
+			colorStork.add(LegLU);
+			// scene.add(LegLU);
+				
+		}, "js");
+
+		loader.load(model_E, function(geometryE){
+
+			//var LegRUGeo = geometryE.clone();
+			var LegRU = new THREE.Mesh(geometryE, meshMat);
+			LegRU.position.y = 3.3;
+			LegRU.position.x = -0.5;
+			// LegRU.position.z = 1;
+
+			LegRU.name = "LegRU";
+
+			colorStork.add(LegRU);
+			// scene.add(LegRU);
+				
+		}, "js");
+
+		loader.load(model_F, function(geometryF){
+
+			//storkWingLGeo = geometryF.clone();
+			var LegLB = new THREE.Mesh(geometryF, meshMat);
+			LegLB.position.y = 2.02;
+			LegLB.position.x = 0.57;
+			// LegLB.position.z = 1;
+
+			LegLB.name = "LegLB";
+
+			colorStork.add(LegLB);
+			// scene.add(LegLB);
+				
+		}, "js");
+
+		loader.load(model_G, function(geometryG){
+
+			//storkWingLGeo = geometryG.clone();
+			var LegRB = new THREE.Mesh(geometryG, meshMat);
+			LegRB.position.y = 2.02;
+			LegRB.position.x = -0.57;
+			// LegRB.position.z = 1;
+
+			LegRB.name = "LegRB";
+
+			colorStork.add(LegRB);
+			// scene.add(LegRB);
+
+
+			
+				
+		}, "js");
+
+		loader.load(model_H, function(geometryH){
+
+			var sack = new THREE.Mesh(geometryH, meshMatB);
+
+			sack.name = "sack";
+
+			colorStork.add(sack);
+			storkWithLegs.push(colorStork);
+			scene.add(colorStork);
+
+			s=true;
+			sR=true;
+			sL=true;
+				
+		}, "js");
+	// }
+
+}
+
+var storkFlyGeo, wingRGeo, wingLGeo, sackGeo;
+
+function loadModelStorkF(model_A, model_B, model_C, model_D, meshMat, meshMatB) {
+
+	var loader = new THREE.JSONLoader();
+	
+
+	loader.load(model_A, function(geometryA){
+		storkFlyGeo = geometryA.clone();	
+		storkFlyGeo.verticesNeedUpdate = true; 
+		storkFlyGeo.normalsNeedUpdate = true; 
+		storkFlyGeo.computeFaceNormals(); 
+		storkFlyGeo.computeVertexNormals(); 
+		storkFlyGeo.computeBoundingSphere();
+
 	}, "js");
 
 	loader.load(model_B, function(geometryB){
+		wingRGeo = geometryB.clone();
+		wingRGeo.verticesNeedUpdate = true; 
+		wingRGeo.normalsNeedUpdate = true; 
+		wingRGeo.computeFaceNormals(); 
+		wingRGeo.computeVertexNormals(); 
+		wingRGeo.computeBoundingSphere();
 
-		storkWingRGeo = geometryB.clone();
-		storkWingR = new THREE.Mesh(geometryB, meshMat);
-		storkWingR.position.y = 4.2;
-		storkWingR.position.x = -0.8;
-		storkWingR.position.z = 1;
-
-		scene.add(storkWingR);
-		sR=true;
-			
 	}, "js");
 
 	loader.load(model_C, function(geometryC){
-
-		storkWingLGeo = geometryC.clone();
-		storkWingL = new THREE.Mesh(geometryC, meshMat);
-		storkWingL.position.y = 4.2;
-		storkWingL.position.x = 0.8;
-		storkWingL.position.z = 1;
-
-		scene.add(storkWingL);
-		sL=true;
-			
+		wingLGeo = geometryC.clone();
+		wingLGeo.verticesNeedUpdate = true; 
+		wingLGeo.normalsNeedUpdate = true; 
+		wingLGeo.computeFaceNormals(); 
+		wingLGeo.computeVertexNormals(); 
+		wingLGeo.computeBoundingSphere();	
 	}, "js");
 
 	loader.load(model_D, function(geometryD){
+		sackGeo = geometryD.clone();
+		sackGeo.verticesNeedUpdate = true; 
+		sackGeo.normalsNeedUpdate = true; 
+		sackGeo.computeFaceNormals(); 
+		sackGeo.computeVertexNormals(); 
+		sackGeo.computeBoundingSphere();
 
-		var sack = new THREE.Mesh(geometryD, meshMatB);
-		scene.add(sack);
-			
+		for(var i=0; i<12; i++){
+			var flyStork = new THREE.Object3D();
+
+			var storkFly = new THREE.Mesh(storkFlyGeo, meshMat);
+			storkFly.name = "storkFly";
+			flyStork.add(storkFly);
+
+			var wingR = new THREE.Mesh(wingRGeo, meshMat);
+			wingR.position.y = 1.2;
+			wingR.position.x = -0.8;
+			wingR.position.z = 1;
+			wingR.name = "wingR";
+			flyStork.add(wingR);
+
+			var wingL = new THREE.Mesh(wingLGeo, meshMat);
+			wingL.position.y = 1.2;
+			wingL.position.x = 0.8;
+			wingL.position.z = 1;
+			wingL.name = "wingL";
+			flyStork.add(wingL);
+
+			var sack = new THREE.Mesh(sackGeo, meshMatB);
+			sack.name = "sack";
+			sack.position.y -= 3;
+			flyStork.add(sack);
+
+			flyStork.fall = false;
+
+			scene.add(flyStork);
+			storkFlys.push(flyStork);		
+		}
+
 	}, "js");
-
 }
 
 function loadModelCorn (model_A, model_B, meshMatB, meshMatA) {
@@ -634,6 +878,9 @@ function render() {
 }
 
 var mirrorSide;
+var step=0, radiusC=20;
+var flyRotation, cloudRun;
+var flyRun = [];
 
 function update() {
 
@@ -648,20 +895,66 @@ function update() {
 
 	pointerControls.update();
 
-	//Storks
-		if(s && sR && sL){
-			var wingRotation = wingWave.run()
-			storkWingR.rotation.x = wingRotation-0.1;
-			storkWingL.rotation.x = wingRotation-0.1;
-		}
-
-
-
 	//CLOUDS
 		for(var i=0; i<clouds.length; i++){
-			var run = sinWaves[i].run();
-			clouds[i].position.y = run;
+			cloudRun = sinWaves[i].run();
+			clouds[i].position.y = cloudRun;
+
+			flyRun[i] = cloudRun;
 		}
+
+	//Storks
+		if(s && sR && sL){
+			wingRotation = wingWave.run();
+			legRotation = legWave.run();
+			flyRotation = flyWave.run(); 
+
+			storkWithLegs[0].getObjectByName("storkWingR").rotation.x = wingRotation-0.1;
+			storkWithLegs[0].getObjectByName("storkWingR").rotation.z = wingRotation-0.1;
+
+			storkWithLegs[0].getObjectByName("storkWingL").rotation.x = wingRotation-0.1;
+			storkWithLegs[0].getObjectByName("storkWingL").rotation.z = -wingRotation+0.1;
+
+			storkWithLegs[0].getObjectByName("LegLU").rotation.x = legRotation;
+			storkWithLegs[0].getObjectByName("LegRU").rotation.x = -legRotation;
+
+			storkWithLegs[0].getObjectByName("LegLB").rotation.x = -legRotation/2;
+			storkWithLegs[0].getObjectByName("LegRB").rotation.x = legRotation/2;
+
+			storkWithLegs[0].getObjectByName("LegLB").position.z = -legRotation*1.2;
+			storkWithLegs[0].getObjectByName("LegRB").position.z = legRotation*1.2;
+
+		}
+
+	//FLY_STORKS
+		step += 0.3;
+		for(var i=0; i<storkFlys.length; i++){
+			//WAVES
+			flyRun = flyWaves[i].run();
+
+			//POSITION
+			storkFlys[i].position.x = Math.sin((360/12*i + step)*(Math.PI/180))*radiusC;
+			//storkFlys[i].position.y = 15 + flyRun*8;
+			storkFlys[i].position.z = Math.sin(Math.PI/2 + (360/12*i + step)*(Math.PI/180))*radiusC;
+			storkFlys[i].rotation.y = (360/12*i+90 + step)*(Math.PI/180);
+
+			//WINGS
+			storkFlys[i].getObjectByName("wingR").rotation.x = flyRotation-0.1;
+			storkFlys[i].getObjectByName("wingL").rotation.x = flyRotation-0.1;
+
+			//FALL
+			if(storkFlys[i].fall){
+				storkFlys[i].position.y -= 0.3;
+				storkFlys[i].rotation.x = 180 *(Math.PI/180);
+			}else{
+				storkFlys[i].position.y = 15 + flyRun*8;
+				// storkFlys[i].rotation.x = -90 *(Math.PI/180);
+			}
+		}
+
+
+
+	
 
 	//CORN_SMALL
 		if(cornSmall.loaded == true){
@@ -697,14 +990,54 @@ function update() {
 				cornSmallKernels[0][i].position.sub(dir).multiplyScalar(1.5);
 			}
 		}
-		
 
+
+		
+	//KILLLLLLLL
+	// find intersections
+		window.onmousedown = function(event){
+
+			var directionCam = pointerControls.getDirection().clone();
+
+			raycaster.set( pointerControls.getObject().position.clone(), directionCam );
+
+			var intersects = raycaster.intersectObjects( scene.children, true );
+			//console.log(intersects);
+
+			if ( intersects.length > 0 ) {
+
+				// console.log(intersects[ 0 ].object);
+				//scene.remove(intersects[ 0 ].object);
+
+				if(intersects[ 0 ].object.parent != scene){
+
+					if(!intersects[ 0 ].object.parent.fall) {
+						intersects[ 0 ].object.parent.fall = true;
+						renderer.setClearColor("rgb(204," + colorRed + "," + colorRed + ")", 1);
+						directLight.color = new THREE.Color("rgb(225," + colorRed + "," + colorRed + ")");
+						if(colorRed>20)
+							colorRed -=20;
+					}
+
+					console.log(intersects[ 0 ].object.parent);
+
+				} else {
+
+					console.log(intersects[ 0 ].object);
+					scene.remove(intersects[ 0 ].object);
+				}
+
+				
+				console.log('hit');
+			}
+		}	
+		
 
 	keyboard.update();
 	if(keyboard.down("space")){
 
 		console.log(pointerControls.posX() + ", " + pointerControls.posY() + ", " + pointerControls.posZ());
-
+		console.log(storkWithLegs[0]);
 		//RELEASE_cornK
 		boom = true;
 	}
@@ -770,7 +1103,7 @@ function update() {
 
 	//WEB_AUDIO_API_POSITION
 		if(soundLoaded){
-			sound.panner.setPosition( stork.position.x, stork.position.y, stork.position.z );
+			sound.panner.setPosition( storkBody.position.x, storkBody.position.y, storkBody.position.z );
 			context.listener.setPosition( pointerControls.posX(), pointerControls.posY(), pointerControls.posZ() );
 		}
 
@@ -854,7 +1187,7 @@ function removePlayer(playerID){
 		var index = playerID-1;
 	else
 		var index = playerID-2;
-	
+
 	scene.remove(storkPlayers[index]);
 }
 
