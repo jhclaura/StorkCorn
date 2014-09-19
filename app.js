@@ -80,7 +80,7 @@ wss.on('connection', function(ws){
 				};
 				allSockets.splice(i,1);
 				clientIds.splice(i,1);
-				redPlayer.splice(i,1);
+				// redPlayer.splice(i,1);
 
 				socketHandlers(ws,msg);
 

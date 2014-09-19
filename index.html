@@ -111,8 +111,8 @@
 
 
 				//REMOVE_PLAYER
-				if(data.type == 'removePlayer'){
-					removePlayer(data.removeID);					
+				if(data.type == 'removePlayer' && data.romoveID > myID){
+					removePlayer(data.removeID - myID - 1);					
 					console.log('removePlayer #' + data.removeID);
 				}
 			}
