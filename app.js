@@ -15,6 +15,8 @@ var port = process.env.PORT || 8000;
 
 //VARIABLES
 var players = [];
+var redPlayer = [];
+redPlayer.type = 'addOldPlayer';
 
 //
 
@@ -38,13 +40,20 @@ var allSockets = [];	//for all sockets/clients
 var clientIds = [];
 var thisId = 0;
 
+
+
 wss.on('connection', function(ws){
+
 	thisId++;
 	clientIds.push(thisId);
+
+	//INSERT_TO_WS
+	//DOES IT WORK????????
+	ws.id = thisId;
+
 	allSockets.push(ws);
-	console.log('new player #%d connected!', thisId);
-	//GENERATE_RED_STORK_AS_PLAYER
-	
+
+	console.log('new player #%d connected!', thisId);	
 
 	ws.on('message', function(data){
 
@@ -53,31 +62,25 @@ wss.on('connection', function(ws){
 
 		//TELL_DIFFERENCE
 		var msg = JSON.parse(data);
+
+		//ADD_ID_INFO
+		//msg.myID = ws.id;
+
 		socketHandlers(ws,msg);
 
-		// if(msg.type == 'updatePlayer'){
-
-		// }
-
-
-		// for(var i=0; i<allSockets.length; i++){
-		// 	try{
-		// 		allSockets[i].send(data);
-		// 	}
-		// 	catch(error){
-		// 		console.log('that socket was closed');
-		// 	}
-		// }
 	});
 
 	ws.on('close', function(){
 		for(var i=0; i<allSockets.length; i++){
+
 			if(allSockets[i]==ws){
 				
 				var msg = {
 					'type':'removePlayer',
-					'removeID': clientIds[i]
+					//'removeID': clientIds[i]
+					'removeID': ws.id	//how to get the ID of ws???
 				};
+
 				allSockets.splice(i,1);
 				clientIds.splice(i,1);
 				redPlayer.splice(i,1);
@@ -93,44 +96,92 @@ wss.on('connection', function(ws){
 
 });
 
-//////////////////////////////////////
-//////////////////////////////////////
-//////////////////////////////////////
 
-var redPlayer = [];
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+
+
 
 var socketHandlers = function(socket,msg){
+
 
 	//GENERAL_SENDING_DATA
 	for(var i=0; i<allSockets.length; i++){
 		try{
-			msg.myID = clientIds[i];
-			allSockets[i].send(JSON.stringify(msg));
+			// //ADD_ID_INFO
+			msg.myID = socket.id;
+			// console.log('msg.myID = socket.id -->' + socket.id);
 
-		}
-		catch(error){
-			console.log('that socket was closed');
-		}
-	}
-
-	//RESTORE_PLAYER_HISTORY
-	for(var i=0; i<allSockets.length; i++){
-		try{
+			// MEG_FROM_PointerLockControls
 			if(msg.type=='addNewPlayer'){
 
+				//GENERATE_RED_STORK_ONLY_ONCE
 				if(msg.camID==0){
-					redPlayer.push(msg);
+					msg.npID = socket.id;
+					console.log('newPlayerID -->' + socket.id);
 					msg.camID++;
-				}
+					// console.log('camID -->' + msg.camID);
 
-				allSockets[i].send(JSON.stringify(redPlayer));				
+					redPlayer.push(msg);
+				}
+			}
+
+			allSockets[i].send(JSON.stringify(msg));
+			// console.log('Server sent a GENERAL thing.');
+
+			if(msg.type=='addNewPlayer'){
+				allSockets[i].send(JSON.stringify(redPlayer));
+				// console.log('Server sent a BROADCAST thing.');				
 				console.log(redPlayer.length);
 			}
+
 		}
 		catch(error){
 			console.log('that socket was closed');
 		}
 	}
+
+
+	//BROADCAST_HISTORY_OF_PLAYERS
+	// for(var i=0; i<allSockets.length; i++){
+	// 	try{
+
+	// 		// MEG_FROM_PointerLockControls
+	// 		if(msg.type=='addNewPlayer'){
+
+	// 			//console.log('addNewPlayer: #' + );
+
+	// 			// msg.newPlayerID = clientIds[i];
+	// 			//msg.newPlayerID = msg.myID;
+
+	// 			//GENERATE_RED_STORK_ONLY_ONCE
+	// 			if(msg.camID==0){
+	// 				msg.npID = socket.id;
+	// 				console.log('newPlayerID -->' + socket.id);
+
+
+					
+	// 				msg.camID++;
+	// 				// console.log('camID -->' + msg.camID);
+
+
+	// 				redPlayer.push(msg);
+	// 			}
+
+	// 			// console.log(redPlayer);
+
+	// 			//allSockets[i].send(JSON.stringify(msg));
+
+	// 			allSockets[i].send(JSON.stringify(redPlayer));
+
+	// 			// console.log('Server sent a BROADCAST thing.');				
+	// 			console.log(redPlayer.length);
+	// 		}
+	// 	}
+	// 	catch(error){
+	// 		console.log('that socket was closed');
+	// 	}
+	// }
 
 	//RESTORE_AddStork
 	// for(var i=0; i<allSockets.length; i++){

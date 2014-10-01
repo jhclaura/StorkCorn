@@ -169,6 +169,21 @@ function funToCall(event){
 
 
 
+	//WEB_CAM
+	var video, videoImage, videoImageContext, videoTexture;
+	var tvsets = [];
+	var tvTexture;
+	var screens = [];
+	var screensR = [];
+	var scr;
+	var tvs = [];
+	var tvsR = [];
+	var tvWidth;
+
+	var boomStart = [];
+
+
+
 //Wave
 	var timeWs = [
 		Math.PI/2, Math.PI, Math.PI/3, Math.PI/7, Math.PI/21.5,
@@ -242,24 +257,6 @@ animate();
 
 function init() {
 
-	/*
-	//EVENT_LISTENER
-		if(window.DeviceOrientationEvent){
-			document.getElementById("doEvent").innerHTML = "DeviceOrientation";
-
-			window.addEventListener('deviceorientation', function(eventData){
-				var tiltFB = eventData.beta;
-				var tiltLR = eventData.gamma;
-				var direction = eventData.alpha;
-
-				deviceOrientationHandler(tiltFB, tiltLR, direction);
-			}, false);
-			
-		} else {
-			document.getElementById("doEvent").innerHTML = "Not supported on your device!";
-		}
-	*/
-
 	//Prevent scrolling for Mobile
 	document.body.addEventListener('touchmove', function(event) {
 	  event.preventDefault();
@@ -313,23 +310,6 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 20000 );
 
-	/*
-	//PATH_CAM
-		controls = new THREE.PathControls(camera);
-		controls.waypoints = [
-			[-500,0,0], [0,200,0], [500,0,0]
-		];
-		controls.duration = 28;
-		controls.useConstantSpeed = true;
-		controls.lookSpeed = 0.06;
-		controls.lookVertical = true;
-		controls.lookHorizontal = true;
-		controls.verticalAngleMap = { srcRange: [0,2*Math.PI], dstRange: [1.1, 3.8] };
-		controls.horizontalAngleMap = { srcRange: [0,2*Math.PI], dstRange: [0.3, Math.PI - 0.3] };
-		controls.lon = 180;
-		controls.init();
-	*/
-
 
 	scene = new THREE.Scene();
 	scene.fog = new THREE.FogExp2(0xcccccc, 0.002);
@@ -337,9 +317,7 @@ function init() {
 	pointerControls = new THREE.PointerLockControls(camera);
 	scene.add( pointerControls.getObject() );
 
-	//PATH_CAM
-	// scene.add(controls.animationParent);
-	// scene.add(camera);
+
 
 	//
 
@@ -371,19 +349,12 @@ function init() {
 	window.addEventListener( 'resize', onWindowResize, false );
 	window.addEventListener( 'deviceroientation', callback, false );
 
+	//
 
 	//MODELS
-	// var groundGeo = THREE.PlaneGeometry(1000,1000,5,5);
-	// var groundMat = new THREE.MeshLambertMaterial( {color: 0x1a2b2b} );
-	// ground = new THREE.Mesh(groundGeo, groundMat);
-	// ground.rotation.x = -Math.PI/2;
-	// ground.position.y -= 10;
-	// scene.add(ground);
-
 	var modelMaterial = new THREE.MeshLambertMaterial( {color: 0xffffff} );
 	loadModelGround("models/cloud_ground.js", modelMaterial);
 
-	// rabbitTexture = THREE.ImageUtils.loadTexture('images/rabbit.png');
 	cloudMat = new THREE.MeshLambertMaterial( {color: 0xffffff, emissive: 0x55ffff} );
 	loadModelCloud("models/cloud_10.js", cloudMat);
 
@@ -394,11 +365,86 @@ function init() {
 	loadModelStorkL("models/stork_v2/storkBody.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/stork_v2/legLU.js", "models/stork_v2/legRU.js", "models/stork_v2/legLB.js", "models/stork_v2/legRB.js", "models/sack.js", storkMaterial, modelMaterialB);
 	loadModelStorkF("models/storkB.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/sack.js", storkMaterial, modelMaterialB);
 
-
 	modelMaterial = new THREE.MeshLambertMaterial( {color: 0xf7e120} );
 	modelMaterialB = new THREE.MeshLambertMaterial( {color: 0xfee9c9} );
 	loadModelCorn("models/cornStick.js", "models/cornKernels.js", modelMaterial, modelMaterialB);
 	// loadModelCornV2("models/cornV2/cornStick2.js", cornRoutes, modelMaterial, modelMaterialB);
+
+	for(var i=0; i<64; i++){
+		boomStart.push(false);
+	}
+
+	//WEB_CAM
+	//-----------------------------------------------------------------
+	//-----------------------------------------------------------------
+	//-----------------------------------------------------------------
+	//-----------------------------------------------------------------
+	video = document.getElementById('monitor');
+	videoImage = document.getElementById('videoImage');
+
+	videoImageContext = videoImage.getContext('2d');
+	videoImageContext.fillStyle = '0xffff00';
+	videoImageContext.fillRect(0,0,videoImage.width, videoImage.height);
+
+	videoTexture = new THREE.Texture( videoImage );
+	videoTexture.minFilter = THREE.LinearFilter;
+	videoTexture.magFilter = THREE.LinearFilter;
+	videoTexture.format = THREE.RGBFormat;
+	videoTexture.generateMipmaps = false;
+	
+	videoTexture.wrapS = videoTexture.wrapT = THREE.ClampToEdgeWrapping;
+	videoTexture.needsUpdate = true;
+
+	var tvGeo = new THREE.PlaneGeometry(1, 0.7, 1, 1);
+	var tvMat = new THREE.MeshBasicMaterial({color: 0xfee9c9, map: videoTexture, overdraw: true, side: THREE.DoubleSide});
+	tvMat.color.setRGB( 1,1,0 );
+
+	//tvWidth = 20;
+	//loadModelScreen("models/screen.js", tvMat);
+
+	// var sph = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 16), tvMat);
+	// scene.add(sph);
+
+	var rabbitHeight = 7, rabbitWidth = 9;
+	for(var j=0; j<rabbitHeight; j++) {
+		for(var i=0; i<rabbitWidth; i++){
+		
+			scr = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), tvMat);
+
+			if(j==3) {
+				scr.scale.set(1.5, 1.5, 1.5);
+				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*5;
+				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*5;
+			}
+			if(j==2 || j==4) {
+				scr.scale.set(1.3, 1.3, 1.3);
+				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*4.7;
+				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*4.7;
+			}
+			if(j==1 || j==5){
+				scr.scale.set(1.2, 1.2, 1.2);
+				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*4.2;
+				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*4.2;
+			}
+			if(j==0 || j==6){
+				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*4;
+				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*4;
+			}
+			scr.position.y = 3 + j*3.2;
+			scr.rotation.y = (-Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180));
+			// scr.rotation.y = ((360/rabbitWidth*i)*(Math.PI/180));
+
+			screens.push(scr);
+			scene.add(scr);
+
+		}
+	}
+	// var scr = new THREE.Mesh(tvGeo, tvMat);
+	// scr.position.y = 5;
+	// scene.add(scr);
+
+
+
 
 
 	//
@@ -414,7 +460,7 @@ function init() {
 	// controls.animation.play();
 
 	//CORN
-		cornSmall = new Corn(0,0,0, 1, cornSmalls);
+		cornSmall = new Corn(0,0,0, 1, cornSmalls, videoTexture);
 		// cornSmall.loadModel();
 		// cornSmalls.push( cornSmall.getCornMesh() );
 
@@ -457,11 +503,8 @@ function finishedLoading(bufferList){
 	sound.panner.connect(mainVolume);
 
 
-
 	sound.volume.gain.value = 1;
-
 	sound.source.start(0);
-
 	soundLoaded = true;
 
 	//ORIENTATION_not working yet
@@ -582,44 +625,8 @@ function loadModelStork (model_A, model_B, model_C, model_D, meshMat, meshMatB) 
 	loader.load(model_A, function(geometryA){
 
 		storkGeo = geometryA.clone();
-		// stork = new THREE.Mesh(geometryA, meshMat);
-		// scene.add(stork);
-		// s=true;
 			
 	}, "js");
-
-	// loader.load(model_B, function(geometryB){
-
-	// 	storkWingRGeo = geometryB.clone();
-	// 	storkWingR = new THREE.Mesh(geometryB, meshMat);
-	// 	storkWingR.position.y = 4.2;
-	// 	storkWingR.position.x = -0.8;
-	// 	storkWingR.position.z = 1;
-
-	// 	scene.add(storkWingR);
-	// 	sR=true;
-			
-	// }, "js");
-
-	// loader.load(model_C, function(geometryC){
-
-	// 	storkWingLGeo = geometryC.clone();
-	// 	storkWingL = new THREE.Mesh(geometryC, meshMat);
-	// 	storkWingL.position.y = 4.2;
-	// 	storkWingL.position.x = 0.8;
-	// 	storkWingL.position.z = 1;
-
-	// 	scene.add(storkWingL);
-	// 	sL=true;
-			
-	// }, "js");
-
-	// loader.load(model_D, function(geometryD){
-
-	// 	var sack = new THREE.Mesh(geometryD, meshMatB);
-	// 	scene.add(sack);
-			
-	// }, "js");
 
 }
 
@@ -861,6 +868,18 @@ function loadModelCorn (model_A, model_B, meshMatB, meshMatA) {
 
 		cornKernels.push(cornB);
 		scene.add(cornB);
+
+		for(var i=0; i<24; i++){
+			cornB = new THREE.Mesh(geometryB, meshMatB);
+			cornB.scale.set(6,7,6);
+
+			cornB.position.x = Math.sin((360/24*i)*(Math.PI/180))*40;
+			cornB.position.y = -1;
+			cornB.position.z = Math.sin(Math.PI/2 + (360/24*i)*(Math.PI/180))*40;
+
+			cornKernels.push(cornB);
+			scene.add(cornB);
+		}
 			
 	}, "js");
 }
@@ -873,6 +892,19 @@ function animate() {
 }
 
 function render() {
+
+	// WEB_CAM
+		if(video.readyState === video.HAVE_ENOUGH_DATA){
+			videoImageContext.drawImage(video, 0, 0,videoImage.width, videoImage.height);
+
+			if(videoTexture){
+				videoTexture.flipY = true;
+				videoTexture.needsUpdate = true;
+				// tvset.dynamic = true;
+			}
+		}
+
+		renderer.clear();
 	renderer.render( scene, camera );
 
 }
@@ -882,7 +914,12 @@ var step=0, radiusC=20;
 var flyRotation, cloudRun;
 var flyRun = [];
 
+var boomTime = [];
+
 function update() {
+
+	// WEB_CAM
+		video.play();
 
 	var time = Date.now() * 0.00005;
 	var delta = clock.getDelta();
@@ -958,13 +995,13 @@ function update() {
 
 	//CORN_SMALL
 		if(cornSmall.loaded == true){
-			console.log("yy");
+			// console.log("yy");
 			cornSmalls.push( cornSmall.getCornMesh() );
 			cornSmall.loaded = false;
 		}
 
 		if(cornSmall.cLoaded == true){
-			console.log("zz");
+			// console.log("zz");
 			cornSmallKernels.push( cornSmall.getCornKernelMeshes() );
 			cornSmall.cLoaded = false;
 		}
@@ -974,7 +1011,8 @@ function update() {
 
 
 
-		
+		// BOOM_V1
+		/*
 		if(cornSmallKernels.length>0 && cornSmalls.length>0 && boom==true) {
 
 			var dir = (cornSmallKernels[0][0].geometry.clone().center()).sub(cornSmalls[0].geometry.clone().center());
@@ -989,8 +1027,46 @@ function update() {
 
 				cornSmallKernels[0][i].position.sub(dir).multiplyScalar(1.5);
 			}
+		}*/
+
+		// BOOM_V2
+		if(cornSmalls.length>0 && screens.length>0 && boom==true) {
+
+			// var dir = (screens[0].geometry.clone().center()).sub(cornSmalls[0].geometry.clone().center());
+			// dir.normalize();
+			// screens[0].position.sub(dir).multiplyScalar(1);
+
+			for(var i=0; i<screens.length; i++){
+				var dir = (screens[i].geometry.clone().center()).sub(cornSmalls[0].geometry.clone().center());
+				dir.normalize();
+
+				screens[i].position.sub(dir).multiplyScalar(2);
+
+				if(boomStart[i]==false){
+					boomTime.push(time);
+					// console.log('record!');
+					boomStart[i] = true;
+				}
+
+			}
+
+
+			for(var i=0; i<screens.length; i++){
+				if(time - boomTime[i] > 0.015){
+
+					scene.remove(screens[i]);
+					// console.log('remove kernels #' + i);
+
+					screens.splice(i,1);
+					boomStart.splice(i,1);
+					boomTime.splice(i,1);
+				}
+			}
+
 		}
 
+
+		// console.log(boomTime[0]);
 
 		
 	//KILLLLLLLL
@@ -1009,26 +1085,26 @@ function update() {
 				// console.log(intersects[ 0 ].object);
 				//scene.remove(intersects[ 0 ].object);
 
-				if(intersects[ 0 ].object.parent != scene){
+				// if(intersects[ 0 ].object.parent != scene){
 
-					if(!intersects[ 0 ].object.parent.fall) {
-						intersects[ 0 ].object.parent.fall = true;
-						renderer.setClearColor("rgb(204," + colorRed + "," + colorRed + ")", 1);
-						directLight.color = new THREE.Color("rgb(225," + colorRed + "," + colorRed + ")");
-						if(colorRed>20)
-							colorRed -=20;
-					}
+				// 	if(!intersects[ 0 ].object.parent.fall) {
+				// 		intersects[ 0 ].object.parent.fall = true;
+				// 		renderer.setClearColor("rgb(204," + colorRed + "," + colorRed + ")", 1);
+				// 		directLight.color = new THREE.Color("rgb(225," + colorRed + "," + colorRed + ")");
+				// 		if(colorRed>20)
+				// 			colorRed -=20;
+				// 	}
 
-					console.log(intersects[ 0 ].object.parent);
+				// 	console.log(intersects[ 0 ].object.parent);
 
-				} else {
+				// } else {
 
-					console.log(intersects[ 0 ].object);
-					scene.remove(intersects[ 0 ].object);
-				}
+				// 	console.log(intersects[ 0 ].object);
+				// 	scene.remove(intersects[ 0 ].object);
+				// }
 
 				
-				console.log('hit');
+				// console.log('hit');
 			}
 		}	
 		
@@ -1144,33 +1220,48 @@ function createStork(locX, locY, locZ, rotY, colorMsg){
 	console.log("new stork!");
 }
 
-function createPlayer(locX, locY, locZ, rotY, colorMsg, qChange){
+function createPlayer(locX, locY, locZ, rotY, colorMsg, qChange, id){
 
 	var storkNewMat = new THREE.MeshLambertMaterial( {color: colorMsg} );
 	var s = new THREE.Mesh(storkGeo, storkNewMat);
 	s.position.set(locX, locY, locZ);
+	// var pId = id;
+	// var stringID = pId.toString();
+	s.name = id;
+	// console.log(id);
+	// s.name = 5;
 
 	if(qChange)
 		s.rotation.y = -rotY;
 	else
 		s.rotation.y = rotY + 180*Math.PI/180;
 	
-	if(!firstStork){
+	// if(!firstStork){
 		scene.add(s);
 		storkPlayers.push(s);
 		console.log("new player!");
-	} else {
-		firstStork = false;
-	}
+	// } else {
+	// 	firstStork = false;
+	// }
 }
 
 
 function updatePlayerStork(playerID, playerLocX, playerLocZ, playerRotY, qChange){
 
-	if(playerID<myID)
-		var index = playerID-1;
-	else
-		var index = playerID-2;
+	// if(playerID<myID)
+	// 	var index = playerID-1+storkPlayers.length;
+	// else //playerID>myID
+	// 	var index = playerID-2+storkPlayers.length-1;
+
+	for(var i=0; i<storkPlayers.length; i++){
+		if(storkPlayers[i].name == playerID){
+			var index = i;
+
+			console.log("update id: " + index + "!");
+
+			break;
+		}
+	}
 
 	storkPlayers[index].position.x = playerLocX;
 	storkPlayers[index].position.z = playerLocZ;
@@ -1183,12 +1274,21 @@ function updatePlayerStork(playerID, playerLocX, playerLocZ, playerRotY, qChange
 
 
 function removePlayer(playerID){
-	if(playerID<myID)
-		var index = playerID-1;
-	else
-		var index = playerID-2;
+	// if(playerID<myID)
+	// 	var index = storkPlayers.length;
+	// else
+	// 	var index = storkPlayers.length-1;
 
+	for(var i=0; i<storkPlayers.length; i++){
+		if(storkPlayers[i].name == playerID){
+			var index = i;
+			break;
+		}
+	}
+
+	// storkPlayers[index].scale = 0.00001;
 	scene.remove(storkPlayers[index]);
+	// storkPlayers.splice(index,1);
 }
 
 

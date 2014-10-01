@@ -1,6 +1,6 @@
 //
 //CORN_CLASS
-function Corn(_x, _y, _z, _speed){
+function Corn(_x, _y, _z, _speed, _tt){
 	
 	var that = this;
 
@@ -8,6 +8,8 @@ function Corn(_x, _y, _z, _speed){
 	this.y = _y;
 	this.z = _z;
 	this.speed = _speed;
+
+	this.tt = _tt;
 
 	this.cornMesh = 0;
 	this.cMesh = [];
@@ -35,19 +37,29 @@ function Corn(_x, _y, _z, _speed){
 		// geometry.center();
 
 		that.cornMesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial( {color: 0xfee9c9} ));
-		console.log("cornMeshes");
+		//console.log("cornMeshes");
+
+		//SCALE_UP
+		that.cornMesh.scale.set(10,10,10);
+
 		scene.add(that.cornMesh);
 		that.loaded = true;
 
 	});
 
+	/*
 	for(var i=1; i<(this.cornRoutes.length); i++){
 		loader.load(this.cornRoutes[i], function(geometry){
 
 			//CENTER_PIVOT
 			// geometry.center();
 
+			// var c = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({map: this.tt, overdraw: true, side: THREE.DoubleSide}) );
 			var c = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial( {color: 0xf7e120} ));
+
+			//SCALE_UP
+			c.scale.set(10,10,10);
+			c.rotation.y = 35*(Math.PI/180);
 
 			that.cMesh.push(c);
 			scene.add(c);
@@ -58,6 +70,8 @@ function Corn(_x, _y, _z, _speed){
 		if( i==(this.cornRoutes.length-1) )
 				that.cLoaded = true;
 	}
+	*/
+	
 	//
 
 	

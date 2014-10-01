@@ -17,8 +17,8 @@ var mouseActive = false, keyActive = false, touchActive = false;
 
 THREE.PointerLockControls = function ( camera ) {
 
-	camID ++;
-	newPlayerNum ++;
+	camID ++;			// 0
+	newPlayerNum ++;	// 1
 
 	var scope = this;
 	var rotatable = true;
@@ -36,6 +36,7 @@ THREE.PointerLockControls = function ( camera ) {
 	var playerStartX = -15 + Math.random()*30;
 	var playerStartZ = -15 + Math.random()*30;
 	var playerStartY = 0;
+	var npID;
 
 	yawObject.position.x = playerStartX;
 	yawObject.position.y = 6;
@@ -101,28 +102,32 @@ THREE.PointerLockControls = function ( camera ) {
 	var touch2ndCurrentLoc = new THREE.Vector2();
 
 
+	////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////
 	//WEBSOCKETS
 	var msg = {
 		'type': 'addNewPlayer',
-		'camID': camID,
+		'camID': camID,							// 0
 		'playerStartX': playerStartX,
 		'playerStartY': playerStartY,
 		'playerStartZ': playerStartZ,
 		'playerStartRotY': playerStartRotY,
 		'newHex': 0xff0000,
-		'qChanged': quaternionChanged
+		'qChanged': quaternionChanged,
+		'npID': 0,
 	};
 
 	//console.log('rotY: ' + playerStartRotY/Math.PI*180);
 
-	// if(ws){
-		if(oldPlayerNum != newPlayerNum){
-			if(ws){
-				// ws.send( JSON.stringify(msg) );
-				sendMessage(JSON.stringify(msg));
-			}
+	//ONLY_EXECUTE_ONCE
+	if(oldPlayerNum != newPlayerNum){	// 0 != 1
+		if(ws){
+			sendMessage(JSON.stringify(msg));
+			// console.log('A msg sent by PointerLockControls when giving birth.');
 		}
-	// }
+	}
+	////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////
 
 	var mouseTimeOut;
 
@@ -614,6 +619,8 @@ THREE.PointerLockControls = function ( camera ) {
 
 		}
 
+		////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
 		//WEB_SOCKET
 			var locX = -25 + Math.random()*50;
 			var locY = 0;
@@ -632,12 +639,17 @@ THREE.PointerLockControls = function ( camera ) {
 				if(mouseActive || keyActive || touchActive)
 					sendMessage( JSON.stringify(msg) );
 					// ws.send( JSON.stringify(msg) );
+					// console.log('A msg sent by PointerLockControls when updating.');
 			}
+
+		////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
 
 
 	};
 
 	//UPDATE_FOR_WS
+	//SO_ONLY_CREATE_NEW_PLAYER_ONCE_FOR_EACH_BROWSER
 	oldPlayerNum = newPlayerNum;
 
 };

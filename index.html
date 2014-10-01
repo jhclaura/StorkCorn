@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<title>clouds</title>
+		<title>stork + corn</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"ma>
 		<link rel="stylesheet" type="text/css" href="css/style.css">
@@ -11,95 +11,164 @@
 		<div id="gui">
 		</div>
 
-		<div id="info">
+		<!-- <div id="info">
 			clouds
-		</div>
+		</div> -->
 
 		<div id="target" style="display: -webkit-box;">
 			<img width="60" height="60" src="images/target.png">
 		</div>
 
 
-		<div id="blocker" style="display: -webkit-box;">
+		<div id="blocker" style="display: -webkit-box; max-width: 100%;
+    height: auto;">
 			<div id="instructions" >
-				<img width="60" height="60" src="images/click.gif">
+				<img width="800" src="images/stork_corn_v3.gif">
 			</div>
 		</div>
 
-		
-		<script>
+
+		<p id="errorMessage" style="display:none"></p>
+		<video id="monitor" autoplay loop width="280" height="300" style="display:none"></video>
+		<canvas id="videoImage" width="280" height="300" style="display:none"></canvas>
+
+		<script type="text/javascript">
+
+
+			// WEB_CAM
+
+			navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+			window.URL = window.URL || window.webkitURL;
+
+			var camvideo = document.getElementById('monitor');
+
+				if (!navigator.getUserMedia) 
+				{
+					document.getElementById('errorMessage').innerHTML = 
+						'Sorry. <code>navigator.getUserMedia()</code> is not available.';
+				} else {
+					navigator.getUserMedia({video: true}, gotStream, noStream);
+				}
+
+			function gotStream(stream) 
+			{
+				if (window.URL) 
+				{   camvideo.src = window.URL.createObjectURL(stream);   } 
+				else // Opera
+				{   camvideo.src = stream;   }
+
+				camvideo.onerror = function(e) 
+				{   stream.stop();   };
+
+				stream.onended = noStream;
+			}
+
+			function noStream(e) 
+			{
+				var msg = 'No camera available.';
+				if (e.code == 1) 
+				{   msg = 'User denied access to use camera.';   }
+				document.getElementById('errorMessage').textContent = msg;
+			}
+
+
+
+			// WS
+
 			var host = location.origin.replace(/^http/, 'ws');
 			var ws = new WebSocket(host);
 			var myID, createID = false;
 			var updatePreviousPlayer = false;
+
+			var msgCount = 0;
+			var newPlayerID;
 
 			ws.onopen = function(){
 				console.log('our browser is connected');
 			}
 
 			ws.onmessage = function(msg){
-				var data = JSON.parse( msg.data );
-				// console.log(data);
 
+				msgCount++;
+				// console.log('msgCount: ' + msgCount);
+
+				var data = JSON.parse( msg.data );
+				//console.log(data);
+
+
+				// ID_FOR_EACH_BROWSER
+				// ONLY_EXECUTE_ONCE
 				if(!createID){
 					myID = data.myID;
 					createID = true;
 				}
-				//console.log('my id: ' + myID);
-
-				//ADD_STORK
-				var hex = data.hex;
-				var locX = data.locX;
-				var locY = data.locY;
-				var locZ = data.locZ;
-				var rotY = data.rotY;
-
-				if(data.type == 'addStork')
-					createStork(locX, locY, locZ, rotY, hex);
-
-				//NEW_PLAYER
-				var playerStartX = data.playerStartX;
-				var playerStartY = data.playerStartY;
-				var playerStartZ = data.playerStartZ;
-				var playerStartRotY = data.playerStartRotY;
-				var newHex = data.newHex;
-				var qChanged = data.qChanged;
-
+				
 
 				if(data.type == 'addNewPlayer'){
-					createPlayer(playerStartX, playerStartY, playerStartZ, playerStartRotY, newHex, qChanged);
+
+					// console.log('data.type: ' + data.type);
+					// console.log('playerStartX: ' + data.playerStartX);
+					// console.log('assign newPlayerID: ' + data.npID);
+
+					//NEW_PLAYER_JOIN
+					//EVERY_NEW_WINDOW_OPEN
+					if(myID!=data.npID && data.npID>0){
+						var playerStartX = data.playerStartX;
+						var playerStartY = data.playerStartY;
+						var playerStartZ = data.playerStartZ;
+						var playerStartRotY = data.playerStartRotY;
+						var newHex = data.newHex;
+						var qChanged = data.qChanged;
+						var npID = data.npID;
+
+						createPlayer(playerStartX, playerStartY, playerStartZ, playerStartRotY, newHex, qChanged, npID);
+
+						console.log('create newPlayer: #' + npID);
+						console.log(' ');
+					}
+
+					// console.log('my id: ' + myID + ', data.npID: ' + data.npID);
+					// console.log(' ');	
 				}
 
-					//info of previous players
-					if(data.length>0 && !updatePreviousPlayer){
-						// console.log(data);
 
-						// for(var i=0; i<data.length; i++){
-						// 	console.log(myID + ', ' + data[i].myID);
-						// }
+				//console.log('data.length: ' + data.length);
 
-						for(var i=0; i<data.length; i++){
-							// console.log('!');
-							if(myID > data[i].myID){
-								// console.log('create!');
+				//PREVIOUS_PLAYERS
+				//ONE_TIME_EVENT
+				// if(data.type == 'addOldPlayer'){
+				// 	console.log('got msg about old player!');
+				// 	console.log(' ');
+				// }
 
-								var oldPlayerStartX = data[i].playerStartX;
-								var oldPlayerStartY = data[i].playerStartY;
-								var oldPlayerStartZ = data[i].playerStartZ;
-								var oldPlayerStartRotY = data[i].playerStartRotY;
-								var oldNewHex = data[i].newHex;
-								var oldQChanged = data[i].qChanged;
+				if(data.length>0 && !updatePreviousPlayer){
 
-								createPlayer(oldPlayerStartX, oldPlayerStartY, oldPlayerStartZ, oldPlayerStartRotY, oldNewHex, oldQChanged);
-								// console.log('create!');
-							}							
-						}
-						updatePreviousPlayer = true;
+					for(var i=0; i<data.length; i++){
+						// console.log('!');
+						if(myID > data[i].myID){
+							// console.log('create! ID: ' + data[i].myID);
+
+							var oldPlayerStartX = data[i].playerStartX;
+							var oldPlayerStartY = data[i].playerStartY;
+							var oldPlayerStartZ = data[i].playerStartZ;
+							var oldPlayerStartRotY = data[i].playerStartRotY;
+							var oldNewHex = data[i].newHex;
+							var oldQChanged = data[i].qChanged;
+
+							var oldPlayerID = data[i].npID;
+
+							createPlayer(oldPlayerStartX, oldPlayerStartY, oldPlayerStartZ, oldPlayerStartRotY, oldNewHex, oldQChanged, oldPlayerID);
+							console.log('create oldPlayer: ' + oldPlayerID);
+						}							
 					}
+					updatePreviousPlayer = true;
+				}
+
 
 				//UPDATE_PLAYER
 				if(data.type == 'updatePlayer' && data.playerID != myID){
-					console.log('data.playerID: ' + data.playerID);
+
+					//console.log('data.playerID: ' + data.playerID);
 
 					var playerLocX = data.playerLocX;
 					var playerLocZ = data.playerLocZ;
@@ -111,8 +180,9 @@
 
 
 				//REMOVE_PLAYER
-				if(data.type == 'removePlayer' && data.romoveID > myID){
-					removePlayer(data.removeID - myID - 1);					
+				if(data.type == 'removePlayer'){
+
+					removePlayer(data.removeID);					
 					console.log('removePlayer #' + data.removeID);
 				}
 			}
@@ -123,35 +193,6 @@
 
 			//
 
-			//MOUSE_EVENT
-			window.onmousedown = function(event){
-
-				var hex = 0x00ffff;
-				var locX = -25 + Math.random()*50;
-				var locY = 0;
-				var locZ = -25 + Math.random()*50;
-				var rotY = -150 * (Math.PI/180) + Math.random() * 300 * (Math.PI/180);
-
-				var msg = {
-					'type':'addStork',
-					'hex': hex,
-					'locX': locX,
-					'locY': locY,
-					'locZ': locZ,
-					'rotY': rotY
-				};
-
-				// console.log(msg.type);
-
-
-				if(ws){
-					// ws.send( JSON.stringify(msg) );
-					sendMessage( JSON.stringify(msg) );
-				}
-
-				// createStork(hex);
-			}
-
 			//SYNCING_ISSUE
 			//http://stackoverflow.com/questions/23898477/tornado-websockets-invalidstateerror-still-in-connecting-state
 			//but has better solution... e.g. promises
@@ -159,6 +200,8 @@
 		        waitForSocketConnection(ws, function() {
 		            ws.send( msg );
 		        });
+
+		        // console.log('* sendMessage');
 		    };
 
 
@@ -168,12 +211,16 @@
 		                if (socket.readyState === 1) {
 		                    if(callback !== undefined){
 		                        callback();
+
+		                        // console.log('* callback');
 		                    }
 		                    return;
 		                } else {
 		                    waitForSocketConnection(socket,callback);
 		                }
 		            }, 5);
+
+		        // console.log('* waitForSocketConnection');
 		    };
 
 		</script>
