@@ -372,12 +372,14 @@ function init() {
 	var modelMaterialB = new THREE.MeshLambertMaterial( {color: 0xfcbac1, side: THREE.DoubleSide} );
 	loadModelStork("models/storkA.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/sack.js", storkMaterial, modelMaterialB);
 	loadModelStorkL("models/stork_v2/storkBody.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/stork_v2/legLU.js", "models/stork_v2/legRU.js", "models/stork_v2/legLB.js", "models/stork_v2/legRB.js", "models/sack.js", storkMaterial, modelMaterialB);
-	loadModelStorkF("models/storkB.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/sack.js", storkMaterial, modelMaterialB);
+	
 
-	modelMaterial = new THREE.MeshLambertMaterial( {color: 0xf7e120} );
-	modelMaterialB = new THREE.MeshLambertMaterial( {color: 0xfee9c9} );
-	loadModelCorn("models/cornStick.js", "models/cornKernels.js", modelMaterial, modelMaterialB);
+	var modelMaterialC = new THREE.MeshLambertMaterial( {color: 0xf7e120} );
+	var modelMaterialD = new THREE.MeshLambertMaterial( {color: 0xfee9c9} );
+	loadModelCorn("models/cornStick.js", "models/cornKernels.js", modelMaterialC, modelMaterialD);
 	// loadModelCornV2("models/cornV2/cornStick2.js", cornRoutes, modelMaterial, modelMaterialB);
+
+	loadModelStorkF("models/storkB.js", "models/wingAR_center.js", "models/wingAL_center.js", "models/sack.js", "models/cornStick.js", "models/cornKernels.js", storkMaterial, modelMaterialB, modelMaterialD, modelMaterialC);
 
 	for(var i=0; i<63; i++){
 		boomStart.push(false);
@@ -783,6 +785,7 @@ function loadModelStorkL (model_A, model_B, model_C, model_D, model_E, model_F, 
 }
 
 var storkFlyGeo, wingRGeo, wingLGeo, sackGeo;
+var stickFlyGeo, kernelFlyGeo;
 
 function loadModelStorkF(model_A, model_B, model_C, model_D, meshMat, meshMatB) {
 
@@ -853,6 +856,115 @@ function loadModelStorkF(model_A, model_B, model_C, model_D, meshMat, meshMatB) 
 			flyStork.add(sack);
 
 			flyStork.fall = false;
+
+			scene.add(flyStork);
+			storkFlys.push(flyStork);		
+		}
+
+	}, "js");
+}
+
+function loadModelStorkF(model_A, model_B, model_C, model_D, model_E, model_F, meshMat, meshMatB, meshMatC, meshMatD) {
+
+	var loader = new THREE.JSONLoader();
+	
+
+	loader.load(model_A, function(geometryA){
+		storkFlyGeo = geometryA.clone();	
+		storkFlyGeo.verticesNeedUpdate = true; 
+		storkFlyGeo.normalsNeedUpdate = true; 
+		storkFlyGeo.computeFaceNormals(); 
+		storkFlyGeo.computeVertexNormals(); 
+		storkFlyGeo.computeBoundingSphere();
+
+	}, "js");
+
+	loader.load(model_B, function(geometryB){
+		wingRGeo = geometryB.clone();
+		wingRGeo.verticesNeedUpdate = true; 
+		wingRGeo.normalsNeedUpdate = true; 
+		wingRGeo.computeFaceNormals(); 
+		wingRGeo.computeVertexNormals(); 
+		wingRGeo.computeBoundingSphere();
+
+	}, "js");
+
+	loader.load(model_C, function(geometryC){
+		wingLGeo = geometryC.clone();
+		wingLGeo.verticesNeedUpdate = true; 
+		wingLGeo.normalsNeedUpdate = true; 
+		wingLGeo.computeFaceNormals(); 
+		wingLGeo.computeVertexNormals(); 
+		wingLGeo.computeBoundingSphere();	
+	}, "js");
+
+	loader.load(model_D, function(geometryD){
+		sackGeo = geometryD.clone();
+		sackGeo.verticesNeedUpdate = true; 
+		sackGeo.normalsNeedUpdate = true; 
+		sackGeo.computeFaceNormals(); 
+		sackGeo.computeVertexNormals(); 
+		sackGeo.computeBoundingSphere();	
+	}, "js");
+
+	loader.load(model_E, function(geometryE){
+		stickFlyGeo = geometryE.clone();
+		stickFlyGeo.verticesNeedUpdate = true; 
+		stickFlyGeo.normalsNeedUpdate = true; 
+		stickFlyGeo.computeFaceNormals(); 
+		stickFlyGeo.computeVertexNormals(); 
+		stickFlyGeo.computeBoundingSphere();	
+	}, "js");
+
+	loader.load(model_F, function(geometryF){
+		kernelFlyGeo = geometryF.clone();
+		kernelFlyGeo.verticesNeedUpdate = true; 
+		kernelFlyGeo.normalsNeedUpdate = true; 
+		kernelFlyGeo.computeFaceNormals(); 
+		kernelFlyGeo.computeVertexNormals(); 
+		kernelFlyGeo.computeBoundingSphere();
+
+		for(var i=0; i<12; i++){
+			var flyStork = new THREE.Object3D();
+
+			var storkFly = new THREE.Mesh(storkFlyGeo, meshMat);
+			storkFly.name = "storkFly";
+			flyStork.add(storkFly);
+
+			var wingR = new THREE.Mesh(wingRGeo, meshMat);
+			wingR.position.y = 1.2;
+			wingR.position.x = -0.8;
+			wingR.position.z = 1;
+			wingR.name = "wingR";
+			flyStork.add(wingR);
+
+			var wingL = new THREE.Mesh(wingLGeo, meshMat);
+			wingL.position.y = 1.2;
+			wingL.position.x = 0.8;
+			wingL.position.z = 1;
+			wingL.name = "wingL";
+			flyStork.add(wingL);
+
+			var sack = new THREE.Mesh(sackGeo, meshMatB);
+			sack.name = "sack";
+			sack.position.y -= 3;
+			flyStork.add(sack);
+			flyStork.fall = false;
+
+			var cStick = new THREE.Mesh(stickFlyGeo, meshMatC);
+			cStick.name = "stick";
+			cStick.scale.set(0.6,0.7,0.6);
+			cStick.rotation.x = 90*Math.PI/180;
+			cStick.position.set(0, 1.6, 2.9);
+			flyStork.add(cStick);
+
+			var cKernel = new THREE.Mesh(kernelFlyGeo, meshMatD);
+			cKernel.name = "kernel";
+			cKernel.scale.set(0.6,0.7,0.6);
+			cKernel.rotation.x = 90*Math.PI/180;
+			cKernel.position.set(0, 1.6, 2.9);
+			flyStork.add(cKernel);
+
 
 			scene.add(flyStork);
 			storkFlys.push(flyStork);		
