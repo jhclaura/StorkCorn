@@ -1,6 +1,6 @@
 //
 //CORN_CLASS
-function Corn(_x, _y, _z, _speed, _tt){
+function Corn(_x, _y, _z, _speed, _size){
 	
 	var that = this;
 
@@ -9,7 +9,7 @@ function Corn(_x, _y, _z, _speed, _tt){
 	this.z = _z;
 	this.speed = _speed;
 
-	this.tt = _tt;
+	this.sz = _size;
 
 	this.cornMesh = 0;
 	this.cMesh = [];
@@ -40,7 +40,10 @@ function Corn(_x, _y, _z, _speed, _tt){
 		//console.log("cornMeshes");
 
 		//SCALE_UP
-		that.cornMesh.scale.set(10,10,10);
+		// that.cornMesh.scale.set(this.sz, this.sz, this.sz);
+		that.cornMesh.scale.set(_size, _size, _size);
+
+		that.cornMesh.position.set(_x, _y, _z); 
 
 		scene.add(that.cornMesh);
 		that.loaded = true;
@@ -71,7 +74,7 @@ function Corn(_x, _y, _z, _speed, _tt){
 				that.cLoaded = true;
 	}
 	*/
-	
+
 	//
 
 	

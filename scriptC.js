@@ -166,6 +166,9 @@ function funToCall(event){
 
 	var cornSmall, cornSmalls = [], cornSmallKernels = [];
 	var boom = false;
+	var booms = [];
+
+	var boomCount = -1;
 
 
 
@@ -181,6 +184,10 @@ function funToCall(event){
 	var tvWidth;
 
 	var boomStart = [];
+
+	var hugeCornX = 20, hugeCornZ = 0, hugeCornSize = 10;
+
+	var scaleBack = false;
 
 
 
@@ -309,9 +316,10 @@ function init() {
 	document.body.appendChild( container );
 
 	camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 20000 );
-
+	camera.name = 'oriCam';
 
 	scene = new THREE.Scene();
+	scene.name = 'mother of the land';
 	scene.fog = new THREE.FogExp2(0xcccccc, 0.002);
 	//PointerLockControl
 	pointerControls = new THREE.PointerLockControls(camera);
@@ -356,6 +364,7 @@ function init() {
 	loadModelGround("models/cloud_ground.js", modelMaterial);
 
 	cloudMat = new THREE.MeshLambertMaterial( {color: 0xffffff, emissive: 0x55ffff} );
+	// cloudMat = new THREE.MeshLambertMaterial( {color: 0xffffff} );
 	loadModelCloud("models/cloud_10.js", cloudMat);
 
 	storkTexture = THREE.ImageUtils.loadTexture('images/stork.png');
@@ -370,8 +379,12 @@ function init() {
 	loadModelCorn("models/cornStick.js", "models/cornKernels.js", modelMaterial, modelMaterialB);
 	// loadModelCornV2("models/cornV2/cornStick2.js", cornRoutes, modelMaterial, modelMaterialB);
 
-	for(var i=0; i<64; i++){
+	for(var i=0; i<63; i++){
 		boomStart.push(false);
+	}
+
+	for(var i=0; i<63; i++){
+		booms.push(false);
 	}
 
 	//WEB_CAM
@@ -379,72 +392,74 @@ function init() {
 	//-----------------------------------------------------------------
 	//-----------------------------------------------------------------
 	//-----------------------------------------------------------------
-	video = document.getElementById('monitor');
-	videoImage = document.getElementById('videoImage');
+		video = document.getElementById('monitor');
+		videoImage = document.getElementById('videoImage');
 
-	videoImageContext = videoImage.getContext('2d');
-	videoImageContext.fillStyle = '0xffff00';
-	videoImageContext.fillRect(0,0,videoImage.width, videoImage.height);
+		videoImageContext = videoImage.getContext('2d');
+		videoImageContext.fillStyle = '0xffff00';
+		videoImageContext.fillRect(0,0,videoImage.width, videoImage.height);
 
-	videoTexture = new THREE.Texture( videoImage );
-	videoTexture.minFilter = THREE.LinearFilter;
-	videoTexture.magFilter = THREE.LinearFilter;
-	videoTexture.format = THREE.RGBFormat;
-	videoTexture.generateMipmaps = false;
-	
-	videoTexture.wrapS = videoTexture.wrapT = THREE.ClampToEdgeWrapping;
-	videoTexture.needsUpdate = true;
-
-	var tvGeo = new THREE.PlaneGeometry(1, 0.7, 1, 1);
-	var tvMat = new THREE.MeshBasicMaterial({color: 0xfee9c9, map: videoTexture, overdraw: true, side: THREE.DoubleSide});
-	tvMat.color.setRGB( 1,1,0 );
-
-	//tvWidth = 20;
-	//loadModelScreen("models/screen.js", tvMat);
-
-	// var sph = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 16), tvMat);
-	// scene.add(sph);
-
-	var rabbitHeight = 7, rabbitWidth = 9;
-	for(var j=0; j<rabbitHeight; j++) {
-		for(var i=0; i<rabbitWidth; i++){
+		videoTexture = new THREE.Texture( videoImage );
+		videoTexture.minFilter = THREE.LinearFilter;
+		videoTexture.magFilter = THREE.LinearFilter;
+		videoTexture.format = THREE.RGBFormat;
+		videoTexture.generateMipmaps = false;
 		
-			scr = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), tvMat);
+		videoTexture.wrapS = videoTexture.wrapT = THREE.ClampToEdgeWrapping;
+		videoTexture.needsUpdate = true;
 
-			if(j==3) {
-				scr.scale.set(1.5, 1.5, 1.5);
-				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*5;
-				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*5;
-			}
-			if(j==2 || j==4) {
-				scr.scale.set(1.3, 1.3, 1.3);
-				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*4.7;
-				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*4.7;
-			}
-			if(j==1 || j==5){
-				scr.scale.set(1.2, 1.2, 1.2);
-				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*4.2;
-				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*4.2;
-			}
-			if(j==0 || j==6){
-				scr.position.x = Math.sin((360/rabbitWidth*i)*(Math.PI/180))*4;
-				scr.position.z = Math.sin((Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180)))*4;
-			}
-			scr.position.y = 3 + j*3.2;
-			scr.rotation.y = (-Math.PI/2 + (360/rabbitWidth*i)*(Math.PI/180));
-			// scr.rotation.y = ((360/rabbitWidth*i)*(Math.PI/180));
+		var tvGeo = new THREE.PlaneGeometry(1, 0.7, 1, 1);
+		var tvMat = new THREE.MeshBasicMaterial({color: 0xfee9c9, map: videoTexture, overdraw: true, side: THREE.DoubleSide});
+		tvMat.color.setRGB( 1,1,0 );
 
-			screens.push(scr);
-			scene.add(scr);
+		//tvWidth = 20;
+		//loadModelScreen("models/screen.js", tvMat);
 
+		// var sph = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 16), tvMat);
+		// scene.add(sph);
+
+		var kernelHeight = 7, kernelWidth = 9;
+		for(var j=0; j<kernelHeight; j++) {
+			for(var i=0; i<kernelWidth; i++){
+			
+				scr = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 16), tvMat);
+
+				if(j==3) {
+					scr.scale.set(1.5, 1.5, 1.5);
+					scr.position.x = hugeCornX + Math.sin((360/kernelWidth*i)*(Math.PI/180))*5;
+					scr.position.z = hugeCornZ + Math.sin((Math.PI/2 + (360/kernelWidth*i)*(Math.PI/180)))*5;
+				}
+				if(j==2 || j==4) {
+					scr.scale.set(1.3, 1.3, 1.3);
+					scr.position.x = hugeCornX + Math.sin((360/kernelWidth*i)*(Math.PI/180))*4.7;
+					scr.position.z = hugeCornZ +Math.sin((Math.PI/2 + (360/kernelWidth*i)*(Math.PI/180)))*4.7;
+				}
+				if(j==1 || j==5){
+					scr.scale.set(1.2, 1.2, 1.2);
+					scr.position.x = hugeCornX + Math.sin((360/kernelWidth*i)*(Math.PI/180))*4.2;
+					scr.position.z = hugeCornZ +Math.sin((Math.PI/2 + (360/kernelWidth*i)*(Math.PI/180)))*4.2;
+				}
+				if(j==0 || j==6){
+					scr.position.x = hugeCornX + Math.sin((360/kernelWidth*i)*(Math.PI/180))*4;
+					scr.position.z = hugeCornZ +Math.sin((Math.PI/2 + (360/kernelWidth*i)*(Math.PI/180)))*4;
+				}
+				scr.position.y = 3 + j*3.2;
+				scr.rotation.y = (-Math.PI/2 + (360/kernelWidth*i)*(Math.PI/180));
+				// scr.rotation.y = ((360/rabbitWidth*i)*(Math.PI/180));
+
+				screens.push(scr);
+				scene.add(scr);
+
+			}
 		}
-	}
-	// var scr = new THREE.Mesh(tvGeo, tvMat);
-	// scr.position.y = 5;
-	// scene.add(scr);
+		// var scr = new THREE.Mesh(tvGeo, tvMat);
+		// scr.position.y = 5;
+		// scene.add(scr);
 
 
-
+		// for(var i=0; i<screens.length; i++){
+		// 	screens[i].scale.set(0.01, 0.01, 0.01);
+		// }
 
 
 	//
@@ -460,7 +475,9 @@ function init() {
 	// controls.animation.play();
 
 	//CORN
-		cornSmall = new Corn(0,0,0, 1, cornSmalls, videoTexture);
+		cornSmall = new Corn(hugeCornX, 0, hugeCornZ, 1, hugeCornSize);
+
+		// cornSmall = new Corn(0, 0, 0, 1, hugeCornSize);
 		// cornSmall.loadModel();
 		// cornSmalls.push( cornSmall.getCornMesh() );
 
@@ -1030,12 +1047,13 @@ function update() {
 		}*/
 
 		// BOOM_V2
-		if(cornSmalls.length>0 && screens.length>0 && boom==true) {
+		if(cornSmalls.length>0 && screens.length>0) {
 
 			// var dir = (screens[0].geometry.clone().center()).sub(cornSmalls[0].geometry.clone().center());
 			// dir.normalize();
 			// screens[0].position.sub(dir).multiplyScalar(1);
 
+			/*
 			for(var i=0; i<screens.length; i++){
 				var dir = (screens[i].geometry.clone().center()).sub(cornSmalls[0].geometry.clone().center());
 				dir.normalize();
@@ -1052,7 +1070,7 @@ function update() {
 
 
 			for(var i=0; i<screens.length; i++){
-				if(time - boomTime[i] > 0.015){
+				if(time - boomTime[i] > 0.02){
 
 					scene.remove(screens[i]);
 					// console.log('remove kernels #' + i);
@@ -1061,8 +1079,89 @@ function update() {
 					boomStart.splice(i,1);
 					boomTime.splice(i,1);
 				}
+			}*/
+
+			// BOOM_V3
+			/*
+			if(boomCount > -1 && boomCount<screens.length){
+
+				var rand = myArray[ Math.floor(Math.random() * (myArray.length-1)) ];
+
+				var dir = (screens[boomCount].geometry.clone().center()).sub(cornSmalls[0].geometry.clone().center());
+				dir.normalize();
+
+				screens[boomCount].position.sub(dir).multiplyScalar(2);
+
+				if(boomStart[boomCount]==false){
+					boomTime.push(time);
+					boomStart[boomCount] = true;
+				}
+
+				if(time - boomTime[boomCount] > 0.02){
+
+					scene.remove(screens[boomCount]);
+					// console.log('remove kernels #' + i);
+
+					screens.splice(boomCount,1);
+					boomStart.splice(boomCount,1);
+					boomTime.splice(boomCount,1);
+				}
+
+			}*/
+
+			// BOOM_V4
+			for(var i=0; i<screens.length; i++){
+				if(booms[i]){
+					var dir = (screens[i].clone().position).sub(cornSmalls[0].clone().position.add(new THREE.Vector3( 20, 0, 4 )));
+					dir.normalize();
+
+					// console.log(screens[i].clone().position.sub(dir));
+					// console.log(screens[i].clone().position.sub(dir));
+
+					screens[i].position.sub(dir).multiplyScalar(2);
+
+					if(boomStart[i]==false){
+						boomTime.push(time);
+						boomStart[i] = true;
+					}
+
+					if(time - boomTime[i] > 0.03){
+
+						scene.remove(screens[i]);
+
+						screens.splice(i,1);
+						boomStart.splice(i,1);
+						boomTime.splice(i,1);
+						booms.splice(i,1);
+					}
+				}
+			}
+		}
+
+		fireKernel = function(){
+			var randNum = Math.floor(Math.random() * (screens.length-1));
+
+			var dir = (screens[randNum].geometry.clone().center()).sub(cornSmalls[0].clone().position);
+			dir.normalize();
+
+
+
+			screens[randNum].position.sub(dir).multiplyScalar(2);
+
+			if(boomStart[randNum]==false){
+				boomTime.push(time);
+				boomStart[randNum] = true;
 			}
 
+			if(time - boomTime[randNum] > 0.02){
+
+				scene.remove(screens[randNum]);
+				// console.log('remove kernels #' + i);
+
+				screens.splice(randNum,1);
+				boomStart.splice(randNum,1);
+				boomTime.splice(randNum,1);
+			}
 		}
 
 
@@ -1073,38 +1172,45 @@ function update() {
 	// find intersections
 		window.onmousedown = function(event){
 
-			var directionCam = pointerControls.getDirection().clone();
+			// var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+			// projector.unprojectVector( vector, camera );
+			// raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
 
+			var directionCam = pointerControls.getDirection().clone();
 			raycaster.set( pointerControls.getObject().position.clone(), directionCam );
+
+
 
 			var intersects = raycaster.intersectObjects( scene.children, true );
 			//console.log(intersects);
 
 			if ( intersects.length > 0 ) {
 
-				// console.log(intersects[ 0 ].object);
+				console.log('hit');
+
+				//console.log(intersects[ 0 ].object.parent);
 				//scene.remove(intersects[ 0 ].object);
 
-				// if(intersects[ 0 ].object.parent != scene){
+				if(intersects[ 0 ].object.parent != scene){
 
-				// 	if(!intersects[ 0 ].object.parent.fall) {
-				// 		intersects[ 0 ].object.parent.fall = true;
-				// 		renderer.setClearColor("rgb(204," + colorRed + "," + colorRed + ")", 1);
-				// 		directLight.color = new THREE.Color("rgb(225," + colorRed + "," + colorRed + ")");
-				// 		if(colorRed>20)
-				// 			colorRed -=20;
-				// 	}
 
-				// 	console.log(intersects[ 0 ].object.parent);
+					if(!intersects[ 0 ].object.parent.fall) {
+						intersects[ 0 ].object.parent.fall = true;
+						renderer.setClearColor("rgb(204," + colorRed + "," + colorRed + ")", 1);
+						directLight.color = new THREE.Color("rgb(225," + colorRed + "," + colorRed + ")");
+						if(colorRed>20)
+							colorRed -=20;
+					}
 
-				// } else {
+					//console.log(intersects[ 0 ].object);
 
-				// 	console.log(intersects[ 0 ].object);
-				// 	scene.remove(intersects[ 0 ].object);
-				// }
+				} else {
+
+					//console.log(intersects[ 0 ].object);
+					// scene.remove(intersects[ 0 ].object);
+				}
 
 				
-				// console.log('hit');
 			}
 		}	
 		
@@ -1112,10 +1218,41 @@ function update() {
 	keyboard.update();
 	if(keyboard.down("space")){
 
-		console.log(pointerControls.posX() + ", " + pointerControls.posY() + ", " + pointerControls.posZ());
-		console.log(storkWithLegs[0]);
+		// console.log(pointerControls.posX() + ", " + pointerControls.posY() + ", " + pointerControls.posZ());
+		// console.log(storkWithLegs[0]);
+
 		//RELEASE_cornK
-		boom = true;
+		// boom = true;
+		// boomCount++;
+		// console.log(boomCount);
+		// fireKernel();
+		var randNum = Math.floor(Math.random() * (screens.length-1));
+		booms[randNum] = true;
+
+
+
+		// if(!scaleBack){
+		// 	for(var i=0; i<screens.length; i++){
+
+		// 		if(i==3) {
+		// 			screens[i].scale.set(1.5, 1.5, 1.5);
+		// 		}
+		// 		if(i==2 || i==4) {
+		// 			screens[i].scale.set(1.3, 1.3, 1.3);
+		// 		}
+		// 		if(i==1 || i==5){
+		// 			screens[i].scale.set(1.2, 1.2, 1.2);
+		// 		}
+		// 		if(i==0 || i==6){
+		// 			screens[i].scale.set(1.1, 1.1, 1.1);
+		// 		}
+
+		// 		screens[i].scale.set(2, 2, 2);
+		// 	}
+
+		// 	scaleBack = true;
+		// }
+		
 	}
 
 	//MUSIC_ON/OFF
