@@ -279,7 +279,7 @@ function init() {
 		bufferLoader = new BufferLoader(
 			context,
 			[
-				'../audios/mark_mothersbaugh_-_zissou_society_blue_star_cadets-irf.mp3'
+				'../audios/zissou_society_blue_star_cadets.mp3'
 			],
 			finishedLoading
 		);
@@ -485,63 +485,22 @@ function init() {
 
 }
 
+var source1, gainNode1;
+
 function finishedLoading(bufferList){
-	analyzer = context.createAnalyser();
-	analyzer.smoothingTimeConstant = 0.8;	//
-	analyzer.fftSize = samples;
-	binCount = analyzer.frequencyBinCount;
-	levelBins = Math.floor(binCount/levelCount);
+	
+	//OLD
+	source1 = context.createBufferSource();
+	gainNode1 = context.createGain();
 
-	frequencyByteData = new Uint8Array(binCount);
-	timeByteData = new Uint8Array(binCount);
+	source1.buffer = bufferList[0];
+	source1.loop = true;
+	source1.connect(gainNode1);
+	gainNode1.connect(context.destination);
+	gainNode1.gain.value = 0.8;
 
-	var length = 256;
-	for(var i=0; i<length; i++){
-		levelHistory.push(0);
-	}
-
-	mainVolume = context.createGain();
-	mainVolume.connect(context.destination);
-
-	// Create an object with a sound source and a volume control.
-	sound = {};
-	sound.source = context.createBufferSource();
-	sound.volume = context.createGain();
-
-	sound.source.buffer = bufferList[0];
-	sound.source.loop = true;
-
-
-	sound.source.connect(analyzer);
-	analyzer.connect(sound.volume);
-	// sound.volume.connect(mainVolume);
-
-	//ADD_POSITION_VARIABLE
-	sound.panner = context.createPanner();
-	sound.volume.connect(sound.panner);
-	sound.panner.connect(mainVolume);
-
-
-	sound.volume.gain.value = 1;
-	sound.source.start(0);
+	source1.start(0);
 	soundLoaded = true;
-
-	//ORIENTATION_not working yet
-		/*
-		vec = new THREE.Vector3(0,0,1);
-		m = stork.matrixWorld;
-		mx = m.elements[3], my = m.elements[7], mz = m.elements[11];
-		m.elements[3] = m.elements[7] = m.elements[11] = 0;
-
-		vec.multiply(m);
-		vec.normalize();
-
-		sound.panner.setOrientation(vec.x, vec.y, vec.z);
-
-		// m.n14 = mx;
-		// m.n24 = my;
-		// m.n34 = mz;
-		*/
 }
 
 function onBeat(){
@@ -1370,12 +1329,13 @@ function update() {
 	//MUSIC_ON/OFF
 		if(soundLoaded){
 			if(chooseSound.s)
-				sound.volume.gain.value = 1;
+				gainNode1.gain.value = 0.8;
 			else
-				sound.volume.gain.value = 0.0;
+				gainNode1.gain.value = 0;
 		}
 
 	//WEB_AUDIO_API
+	/*
 		if(analyzer){
 			analyzer.getByteFrequencyData( frequencyByteData );
 			analyzer.getByteTimeDomainData( timeByteData );
@@ -1425,12 +1385,13 @@ function update() {
 
 			bpmTime = (new Date().getTime()-bpmStart)/msecsAvg;
 		}
+		*/
 
 	//WEB_AUDIO_API_POSITION
-		if(soundLoaded){
-			sound.panner.setPosition( storkBody.position.x, storkBody.position.y, storkBody.position.z );
-			context.listener.setPosition( pointerControls.posX(), pointerControls.posY(), pointerControls.posZ() );
-		}
+		// if(soundLoaded){
+		// 	sound.panner.setPosition( storkBody.position.x, storkBody.position.y, storkBody.position.z );
+		// 	context.listener.setPosition( pointerControls.posX(), pointerControls.posY(), pointerControls.posZ() );
+		// }
 
 		//ORIENTATION
 		//http://www.html5rocks.com/en/tutorials/webaudio/positional_audio/
