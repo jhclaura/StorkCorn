@@ -497,7 +497,7 @@ function finishedLoading(bufferList){
 	source1.loop = true;
 	source1.connect(gainNode1);
 	gainNode1.connect(context.destination);
-	gainNode1.gain.value = 0.8;
+	gainNode1.gain.value = 0.0;
 
 	source1.start(0);
 	soundLoaded = true;
